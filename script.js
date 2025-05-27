@@ -1,0 +1,198 @@
+const PRODUCT_STORAGE_KEY = 'harmonyInstrumentsProducts';
+
+const seedProducts = [
+  {
+    id: 'p1',
+    title: 'Classic Acoustic Guitar',
+    category: 'guitar',
+    price: 249,
+    description: 'A beautifully crafted acoustic guitar with rich tones, perfect for beginners and pros alike.',
+    sellingType: 'new-product',
+    image: 'guitar_akustik.jpg'
+  },
+  {
+    id: 'p2',
+    title: 'Electric Guitar - Red Flame',
+    category: 'guitar',
+    price: 799,
+    description: 'Striking electric guitar with powerful sound and sleek design, favored by rock enthusiasts.',
+    sellingType: 'best-seller',
+    image: 'electric_guitar.jpg'
+  },
+  {
+    id: 'p3',
+    title: 'Digital Piano 88 Keys',
+    category: 'keyboard',
+    price: 1099,
+    description: '88-key digital piano offering authentic grand piano sound with modern features.',
+    sellingType: 'promo',
+    image: 'piano.jpg'
+  },
+  {
+    id: 'p4',
+    title: 'Professional Drum Set',
+    category: 'drums',
+    price: 1500,
+    description: 'Complete drum set for professionals, crafted for durability and powerful sound.',
+    sellingType: 'best-seller',
+    image: 'drum.jpg'
+  },
+  {
+    id: 'p5',
+    title: 'Violin - Master Series',
+    category: 'Violin',
+    price: 499,
+    description: 'Made for the passionate violinists, delivers rich, warm tones and elegant design.',
+    sellingType: 'new-product',
+    image: 'violin.jpg'
+  },
+  {
+    id: 'p6',
+    title: 'Saxophone - Jazz Edition',
+    category: 'Saxophone',
+    price: 899,
+    description: 'Smooth and mellow saxophone designed to express jazz and blues emotions perfectly.',
+    sellingType: 'promo',
+    image: 'saxophone.jpg'
+  }
+];
+
+function seedData() {
+  if (!localStorage.getItem(PRODUCT_STORAGE_KEY)) {
+    localStorage.setItem(PRODUCT_STORAGE_KEY, JSON.stringify(seedProducts));
+  }
+}
+
+function getProducts() {
+  const productsJSON = localStorage.getItem(PRODUCT_STORAGE_KEY);
+  if (!productsJSON) return [];
+  try {
+    return JSON.parse(productsJSON);
+  } catch (e) {
+    console.error('Corrupt product data:', e);
+    return [];
+  }
+}
+
+function renderProductList() {
+  const productListEl = document.getElementById('product-list');
+  const filterType = document.getElementById('filterType').value;
+  const filterCategory = document.getElementById('filterCategory').value;
+  const products = getProducts();
+
+  const filteredProducts = products.filter((p) => {
+    const typeMatch = filterType === 'all' || p.sellingType === filterType;
+    const categoryMatch = filterCategory === 'all' || p.category === filterCategory;
+    return typeMatch && categoryMatch;
+  });
+
+  if (filteredProducts.length === 0) {
+    productListEl.innerHTML = '<p style="grid-column: 1/-1; font-style: italic; text-align:center; color: var(--brown-medium);">No products found for the selected filters.</p>';
+    return;
+  }
+
+  productListEl.innerHTML = filteredProducts.map(p => `
+    <article tabindex="0" class="product-card" data-id="${p.id}" aria-labelledby="title-${p.id}">
+      <img src="${p.image}" alt="${p.title}" class="product-image" loading="lazy" />
+      <div class="product-info">
+        <h3 id="title-${p.id}" class="product-title">${p.title}</h3>
+        <p class="product-category">${p.category}</p>
+        <p class="product-price">$${p.price.toFixed(2)}</p>
+        <span class="selling-type ${p.sellingType.replace(' ', '-')}">${p.sellingType.replace(/-/g, ' ').toUpperCase()}</span>
+      </div>
+    </article>
+  `).join('');
+}
+
+function showProductDetail(productId) {
+  const products = getProducts();
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+
+  document.getElementById('product-list').style.display = 'none';
+  const detailSection = document.getElementById('product-detail');
+  detailSection.style.display = 'flex';
+
+  document.getElementById('detailImage').src = product.image;
+  document.getElementById('detailImage').alt = product.title;
+  document.getElementById('detailTitle').textContent = product.title;
+  document.getElementById('detailCategory').textContent = product.category;
+  document.getElementById('detailDescription').textContent = product.description;
+  document.getElementById('detailPrice').textContent = '$' + product.price.toFixed(2);
+  const sellingTypeSpan = document.getElementById('detailSellingType');
+  sellingTypeSpan.textContent = product.sellingType.replace(/-/g, ' ').toUpperCase();
+  sellingTypeSpan.className = 'selling-type ' + product.sellingType.replace(' ', '-');
+}
+
+function backToList() {
+  document.getElementById('product-detail').style.display = 'none';
+  document.getElementById('product-list').style.display = '';
+}
+
+function init() {
+  seedData();
+  renderProductList();
+
+  document.getElementById('filterType').addEventListener('change', renderProductList);
+  document.getElementById('filterCategory').addEventListener('change', renderProductList);
+
+  document.getElementById('product-list').addEventListener('click', (e) => {
+    let card = e.target;
+    while (card && !card.classList.contains('product-card')) {
+      card = card.parentElement;
+    }
+    if (card) {
+      const productId = card.getAttribute('data-id');
+      showProductDetail(productId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+
+  document.getElementById('product-list').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const card = e.target.closest('.product-card');
+      if (card) {
+        const productId = card.getAttribute('data-id');
+        showProductDetail(productId);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  });
+
+  document.getElementById('backToListBtn').addEventListener('click', () => {
+    backToList();
+  });
+}
+
+window.addEventListener('DOMContentLoaded', init);
+fetch('http://localhost:3000/api/instrument')
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById('container');
+    console.log(data)
+
+    data.forEach(item => {
+      console.log(item.gambar)
+      // buat elemen section untuk setiap alat musik
+      const section = document.createElement('section');
+
+      // nama alat musik
+      const heading = document.createElement('h2');
+      heading.textContent = item.nama;
+      section.appendChild(heading);
+
+      // gambar alat musik
+      const img = document.createElement('img');
+      // sumber gambar diarahkan ke endpoint static backend
+      img.src = `/photo/${item.gambar}`;
+      img.alt = item.nama;
+      img.style.width = '200px'; // contoh styling, sesuaikan
+
+      section.appendChild(img);
+
+      container.appendChild(section);
+    });
+  })
+  .catch(err => {
+    console.error('Error fetch data:', err);
+  });
